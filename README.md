@@ -1,4 +1,4 @@
-# AI Task Agent 🤖
+# AI Task Agent 
 
 A lightweight Node.js backend that turns natural-language task messages into structured data using **Claude AI**, then sends them to **Google Sheets** via a **Zapier webhook**.
 
@@ -181,6 +181,12 @@ ai-task-agent/
 | Zapier     | Webhook → Google Sheets pipeline |
 
 ---
+## SCREENSHOTS
+
+<img width="891" height="178" alt="image" src="https://github.com/user-attachments/assets/af3d45af-1ba0-45ee-83c1-b0c73733d00c" />
+<img width="706" height="654" alt="image" src="https://github.com/user-attachments/assets/17511ee5-1ea3-416f-9ed9-f0d988fd4310" />
+
+
 
 ## License
 
