@@ -162,7 +162,6 @@ ai-task-agent/
 ├── server.js          # Main application (Express + Claude + Zapier)
 ├── package.json       # Dependencies and scripts
 ├── .env.example       # Template for environment variables
-├── .env               # Your actual secrets (git-ignored)
 ├── .gitignore         # Files excluded from version control
 └── README.md          # This file
 ```
