@@ -157,6 +157,11 @@ ai-task-agent/
 <img width="706" height="654" alt="image" src="https://github.com/user-attachments/assets/17511ee5-1ea3-416f-9ed9-f0d988fd4310" />
 
 ---
+### Slack Bot Message
+<img width="772" height="93" alt="image" src="https://github.com/user-attachments/assets/8778573d-1db0-4d92-b4fa-ac27157a8736" />
+
+
+
 
 ## Future Improvements
 
