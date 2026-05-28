@@ -146,10 +146,9 @@ ai-task-agent/
 
 ## Screenshots
 
-### Slack Task Input
+### Google sheet update
 
 <img width="843" height="140" alt="image" src="https://github.com/user-attachments/assets/495bf652-9604-4d2c-aba6-c4b254cfd651" />
-
 
 ---
 
@@ -160,6 +159,9 @@ ai-task-agent/
 ---
 ### Slack Bot Message
 <img width="772" height="93" alt="image" src="https://github.com/user-attachments/assets/8778573d-1db0-4d92-b4fa-ac27157a8736" />
+
+###  Backend Processing Logs
+<img width="530" height="86" alt="image" src="https://github.com/user-attachments/assets/a6c8397c-bd58-4ffe-9b1f-145eba124086" />
 
 
 
