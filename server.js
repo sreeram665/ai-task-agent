@@ -1,199 +1,219 @@
-// ============================================
-//  AI Task Agent — server.js
-// ============================================
-//  This is the main entry point of the app.
-//  It spins up an Express server with a single
-//  POST /task endpoint that:
-//    1. Receives a natural-language message
-//    2. Sends it to Claude AI to extract structured data
-//    3. Forwards the structured JSON to a Zapier webhook
-//       (which stores it in Google Sheets)
-// ============================================
+require("dotenv").config();
 
-// --------------------------------------------------
-// 1. LOAD ENVIRONMENT VARIABLES
-// --------------------------------------------------
-// dotenv reads the .env file and makes its values
-// available via process.env.VARIABLE_NAME
-const dotenv = require("dotenv");
-dotenv.config();
+const express = require("express");
+const axios = require("axios");
 
-// --------------------------------------------------
-// 2. IMPORT DEPENDENCIES
-// --------------------------------------------------
-const express = require("express");   // Web framework
-const cors = require("cors");         // Cross-Origin Resource Sharing
-const axios = require("axios");       // HTTP client for API calls
-
-// --------------------------------------------------
-// 3. INITIALIZE EXPRESS APP
-// --------------------------------------------------
 const app = express();
 
-// Parse incoming JSON request bodies automatically
 app.use(express.json());
 
-// Allow requests from any origin (useful when testing
-// with Postman or a future frontend)
-app.use(cors());
-
-// --------------------------------------------------
-// 4. CONFIGURATION
-// --------------------------------------------------
 const PORT = process.env.PORT || 3000;
+
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ZAPIER_WEBHOOK = process.env.ZAPIER_WEBHOOK;
 
-// Quick sanity check — warn if keys are missing
-if (!ANTHROPIC_API_KEY) {
-  console.warn("⚠️  ANTHROPIC_API_KEY is not set in .env");
-}
-if (!ZAPIER_WEBHOOK) {
-  console.warn("⚠️  ZAPIER_WEBHOOK is not set in .env");
-}
 
-// --------------------------------------------------
-// 5. HELPER — Call Claude AI to extract task data
-// --------------------------------------------------
-// Takes a raw natural-language message like:
-//   "Sreeram finish backend integration by Friday high priority"
-// and returns structured JSON:
-//   { task, assignee, deadline, priority }
-async function extractTaskWithClaude(message) {
+// ======================================
+// CLAUDE AI TASK EXTRACTION
+// ======================================
+async function extractTaskDetails(message) {
+
   console.log("🤖 Sending message to Claude AI...");
 
-  // Call the Anthropic Messages API
   const response = await axios.post(
     "https://api.anthropic.com/v1/messages",
     {
       model: "claude-sonnet-4-20250514",
-      max_tokens: 256,
-      // The system prompt tells Claude exactly what format to return
-      system: `You are a task extraction assistant.
-Extract the following fields from the user's message:
-- task: a short description of the work to be done
-- assignee: the person responsible
-- deadline: when it should be done
-- priority: Low, Medium, or High
-
-Respond with ONLY a valid JSON object. No markdown, no explanation, no code fences.
-Example output:
-{"task":"Finish backend integration","assignee":"Sreeram","deadline":"Friday","priority":"High"}`,
+      max_tokens: 200,
       messages: [
         {
           role: "user",
-          content: message,
-        },
-      ],
+          content: `
+Extract task details from this message and return ONLY valid JSON.
+
+Message:
+"${message}"
+
+Return format:
+{
+  "task": "",
+  "assignee": "",
+  "deadline": "",
+  "priority": ""
+}
+`
+        }
+      ]
     },
     {
       headers: {
-        "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01", // required API version header
-      },
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+      }
     }
   );
 
-  // Claude returns an array of content blocks; grab the text from the first one
-  const rawText = response.data.content[0].text;
+  let rawText = response.data.content[0].text;
+
   console.log("📝 Claude raw response:", rawText);
 
-  // Parse the JSON string into a real JavaScript object
-  const taskData = JSON.parse(rawText);
-  return taskData;
+  // Remove markdown formatting if Claude adds it
+  rawText = rawText
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+  const parsed = JSON.parse(rawText);
+
+  console.log("✅ Extracted task data:", parsed);
+
+  return parsed;
 }
 
-// --------------------------------------------------
-// 6. HELPER — Send structured data to Zapier webhook
-// --------------------------------------------------
-// Zapier will receive this JSON and can map each field
-// to a column in Google Sheets.
-async function sendToZapier(taskData) {
-  console.log("📤 Sending data to Zapier webhook...");
 
-  const response = await axios.post(ZAPIER_WEBHOOK, taskData);
+// ======================================
+// SEND TO ZAPIER
+// ======================================
+async function sendToZapier(taskData) {
+
+  console.log("📩 Sending data to Zapier webhook...");
+
+  const response = await axios.post(
+    ZAPIER_WEBHOOK,
+    {
+      task: taskData.task,
+      assignee: taskData.assignee,
+      deadline: taskData.deadline,
+      priority: taskData.priority
+    },
+    {
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }
+  );
 
   console.log("✅ Zapier response status:", response.status);
+
   return response.data;
 }
 
-// --------------------------------------------------
-// 7. ROUTES
-// --------------------------------------------------
 
-// Health-check endpoint (GET /)
-// Useful to quickly verify the server is running.
-app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "AI Task Agent is running 🚀",
-  });
-});
-
-// Main endpoint (POST /task)
-// Accepts: { "message": "..." }
-// Returns: { success, taskData, zapierResponse }
+// ======================================
+// NORMAL API ROUTE
+// ======================================
 app.post("/task", async (req, res) => {
+
   try {
-    // --- 7a. Validate the request body ---
+
     const { message } = req.body;
 
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({
-        success: false,
-        error: 'Request body must include a "message" string.',
-      });
-    }
-
-    console.log("\n============================");
+    console.log("\n==============================");
     console.log("📥 New task received:", message);
-    console.log("============================");
+    console.log("==============================\n");
 
-    // --- 7b. Extract structured data via Claude ---
-    const taskData = await extractTaskWithClaude(message);
-    console.log("✅ Extracted task data:", taskData);
+    const taskData = await extractTaskDetails(message);
 
-    // --- 7c. Forward to Zapier webhook ---
-    let zapierResponse = null;
+    await sendToZapier(taskData);
 
-    if (ZAPIER_WEBHOOK) {
-      zapierResponse = await sendToZapier(taskData);
-    } else {
-      console.log("⏭️  Skipping Zapier (no webhook URL configured)");
-    }
-
-    // --- 7d. Send success response back to the client ---
-    return res.status(200).json({
+    res.json({
       success: true,
-      taskData,
-      zapierResponse,
+      data: taskData
     });
-  } catch (error) {
-    // --------------------------------------------------
-    // Error handling — log the full error for debugging
-    // and send a clean message back to the client
-    // --------------------------------------------------
-    console.error("❌ Error processing task:", error.message);
 
-    // If Claude or Zapier returned an HTTP error, include details
-    if (error.response) {
-      console.error("   Response status:", error.response.status);
-      console.error("   Response data:", JSON.stringify(error.response.data));
+  } catch (err) {
+
+    console.error("❌ Error processing task:", err.message);
+
+    if (err.response) {
+      console.error("Response status:", err.response.status);
+      console.error("Response data:", err.response.data);
     }
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: "Failed to process the task. Check server logs for details.",
+      error: "Failed to process the task."
     });
   }
 });
 
-// --------------------------------------------------
-// 8. START THE SERVER
-// --------------------------------------------------
+
+// ======================================
+// SLACK EVENTS ROUTE
+// ======================================
+app.post("/slack/events", async (req, res) => {
+
+  const body = req.body;
+
+  console.log("Slack body:", body);
+
+  // Slack verification
+  if (body.type === "url_verification") {
+    return res.status(200).send(body.challenge);
+  }
+
+  // Slack event callback
+  if (body.event) {
+
+    // Ignore bot messages
+    if (body.event.bot_id) {
+      return res.sendStatus(200);
+    }
+
+    // Extract Slack message
+    let message = body.event.text;
+
+    // Remove bot mention
+    message = message.replace(/<@[^>]+>/g, "").trim();
+
+    console.log("💬 Cleaned Slack message:", message);
+
+    try {
+
+      // AI extraction
+      const taskData = await extractTaskDetails(message);
+
+      console.log("FINAL TASK DATA:", taskData);
+
+      // Send to Zapier
+      await sendToZapier(taskData);
+
+      console.log("🎉 Slack task automation completed successfully");
+
+    } catch (err) {
+
+      console.error("❌ Slack processing error:", err.message);
+
+      if (err.response) {
+        console.error("Response status:", err.response.status);
+        console.error("Response data:", err.response.data);
+      }
+    }
+  }
+
+  res.sendStatus(200);
+});
+
+
+// ======================================
+// HEALTH CHECK
+// ======================================
+app.get("/", (req, res) => {
+  res.send("🚀 AI Task Agent Server is Running");
+});
+
+
+// ======================================
+// START SERVER
+// ======================================
 app.listen(PORT, () => {
-  console.log(`\n🚀 AI Task Agent server is running on http://localhost:${PORT}`);
-  console.log(`   POST /task  — send a natural-language task message`);
-  console.log(`   GET  /      — health check\n`);
+
+  console.log(`
+🚀 AI Task Agent server is running on http://localhost:${PORT}
+
+POST /task
+POST /slack/events
+GET /
+`);
 });
