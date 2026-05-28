@@ -148,7 +148,8 @@ ai-task-agent/
 
 ### Slack Task Input
 
-<img width="891" height="178" alt="image" src="https://github.com/user-attachments/assets/af3d45af-1ba0-45ee-83c1-b0c73733d00c" />
+<img width="843" height="140" alt="image" src="https://github.com/user-attachments/assets/495bf652-9604-4d2c-aba6-c4b254cfd651" />
+
 
 ---
 
