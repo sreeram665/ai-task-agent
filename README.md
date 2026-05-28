@@ -1,196 +1,174 @@
-<<<<<<< HEAD
-=======
-# AI Task Agent 
+# AI Task Agent 🚀
 
-A lightweight Node.js backend that turns natural-language task messages into structured data using **Claude AI**, then sends them to **Google Sheets** via a **Zapier webhook**.
-
-## How It Works
-
-```
-User Message ──▶ Express API ──▶ Claude AI ──▶ Zapier Webhook ──▶ Google Sheets
-```
-
-1. You send a plain-English task to `POST /task`
-2. Claude extracts **task**, **assignee**, **deadline**, and **priority**
-3. The structured JSON is forwarded to your Zapier webhook
-4. Zapier writes a new row in Google Sheets
+AI-powered workflow automation system that converts natural language task messages from Slack into structured task entries using Claude AI, Zapier, and Google Sheets.
 
 ---
 
-## Quick Start
+## Features
 
-### 1. Install dependencies
+* Natural language task extraction using Claude AI
+* Slack bot integration with event subscriptions
+* Automated workflow processing using Zapier
+* Real-time Google Sheets task tracking
+* Backend API built with Node.js and Express.js
+* JSON-based structured task extraction
+* Webhook automation pipeline
 
-```bash
-npm install
-```
+---
 
-### 2. Set up environment variables
+## Workflow
 
-```bash
-cp .env.example .env
-```
-
-Open `.env` and fill in your keys:
-
-```env
-ANTHROPIC_API_KEY=sk-ant-your-actual-key
-ZAPIER_WEBHOOK=https://hooks.zapier.com/hooks/catch/xxxxx/yyyyy/
-PORT=3000
-```
-
-### 3. Start the server
-
-```bash
-# Production
-npm start
-
-# Development (auto-restarts on file changes)
-npm run dev
-```
-
-You should see:
-
-```
-🚀 AI Task Agent server is running on http://localhost:3000
-   POST /task  — send a natural-language task message
-   GET  /      — health check
+```text
+Slack Message
+      ↓
+Node.js Backend
+      ↓
+Claude AI Extraction
+      ↓
+Structured JSON
+      ↓
+Zapier Webhook
+      ↓
+Google Sheets Update
 ```
 
 ---
 
-## API Reference
+## Example Input
 
-### `GET /`
-
-Health check.
-
-**Response:**
-
-```json
-{
-  "status": "ok",
-  "message": "AI Task Agent is running 🚀"
-}
-```
-
-### `POST /task`
-
-Extract structured task data from a natural-language message.
-
-**Request body:**
-
-```json
-{
-  "message": "Sreeram finish backend integration by Friday high priority"
-}
-```
-
-**Successful response (200):**
-
-```json
-{
-  "success": true,
-  "taskData": {
-    "task": "Finish backend integration",
-    "assignee": "Sreeram",
-    "deadline": "Friday",
-    "priority": "High"
-  },
-  "zapierResponse": "success"
-}
-```
-
-**Error response (400 — missing message):**
-
-```json
-{
-  "success": false,
-  "error": "Request body must include a \"message\" string."
-}
-```
-
-**Error response (500 — server error):**
-
-```json
-{
-  "success": false,
-  "error": "Failed to process the task. Check server logs for details."
-}
+```text
+@AI Task Agent assign Rahul backend integration by Sunday high priority
 ```
 
 ---
 
-## Example Postman Request
-
-| Field        | Value                                   |
-| ------------ | --------------------------------------- |
-| **Method**   | `POST`                                  |
-| **URL**      | `http://localhost:3000/task`             |
-| **Headers**  | `Content-Type: application/json`        |
-| **Body**     | raw JSON (see below)                    |
+## Example Extracted Output
 
 ```json
 {
-  "message": "Sreeram finish backend integration by Friday high priority"
+  "task": "backend integration",
+  "assignee": "Rahul",
+  "deadline": "Sunday",
+  "priority": "high"
 }
-```
-
-Or use **cURL**:
-
-```bash
-curl -X POST http://localhost:3000/task \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Sreeram finish backend integration by Friday high priority"}'
-```
-
----
-
-## Zapier Setup
-
-1. Go to [zapier.com](https://zapier.com) and create a new Zap
-2. **Trigger:** Choose *Webhooks by Zapier* → *Catch Hook*
-3. Copy the webhook URL and paste it into your `.env` as `ZAPIER_WEBHOOK`
-4. **Action:** Choose *Google Sheets* → *Create Spreadsheet Row*
-5. Map the fields: `task`, `assignee`, `deadline`, `priority`
-6. Test and publish your Zap!
-
----
-
-## Project Structure
-
-```
-ai-task-agent/
-├── server.js          # Main application (Express + Claude + Zapier)
-├── package.json       # Dependencies and scripts
-├── .env.example       # Template for environment variables
-├── .gitignore         # Files excluded from version control
-└── README.md          # This file
 ```
 
 ---
 
 ## Tech Stack
 
-| Tool       | Purpose                          |
-| ---------- | -------------------------------- |
-| Node.js    | Runtime                          |
-| Express    | Web server / routing             |
-| Axios      | HTTP client (Claude + Zapier)    |
-| CORS       | Cross-origin request support     |
-| dotenv     | Load environment variables       |
-| Claude AI  | Natural language → structured data |
-| Zapier     | Webhook → Google Sheets pipeline |
+* Node.js
+* Express.js
+* Anthropic Claude API
+* Slack API
+* Zapier Webhooks
+* Google Sheets
+* Axios
 
 ---
-## SCREENSHOTS
+
+## Installation
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/sreeram665/ai-task-agent.git
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file:
+
+```env
+ANTHROPIC_API_KEY=your_anthropic_api_key
+ZAPIER_WEBHOOK=your_zapier_webhook_url
+PORT=3000
+```
+
+### 4. Start Server
+
+```bash
+node server.js
+```
+
+---
+
+## API Endpoints
+
+### POST `/task`
+
+Processes natural language task messages.
+
+Example Request:
+
+```json
+{
+  "message": "Assign Rahul frontend integration by Friday high priority"
+}
+```
+
+---
+
+### POST `/slack/events`
+
+Handles Slack event subscriptions and automation workflows.
+
+---
+
+## Slack Integration
+
+* Slack Event Subscriptions
+* `app_mention` event handling
+* Real-time Slack task automation
+* AI-powered task extraction
+
+---
+
+## Project Structure
+
+```text
+ai-task-agent/
+│
+├── server.js
+├── package.json
+├── .env
+├── README.md
+└── node_modules/
+```
+
+---
+
+## Screenshots
+
+### Slack Task Input
 
 <img width="891" height="178" alt="image" src="https://github.com/user-attachments/assets/af3d45af-1ba0-45ee-83c1-b0c73733d00c" />
+
+---
+
+### Zapier Workflow Automation
+
 <img width="706" height="654" alt="image" src="https://github.com/user-attachments/assets/17511ee5-1ea3-416f-9ed9-f0d988fd4310" />
 
+---
 
+## Future Improvements
 
-## License
+* Slack confirmation replies
+* AI-generated task summaries
+* Deadline reminders
+* Notion/Jira integration
+* Team dashboards
+* Multi-user authentication
 
-ISC
->>>>>>> 6c43262ace0f1d9d76f92cb9b250fe2c985f912e
+---
+
+## Author
+
+Sreeram A
